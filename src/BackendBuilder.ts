@@ -1,4 +1,8 @@
-import { DatabaseSchemaManager, GraphQLBackendCreator, IGraphQLBackend } from "graphback";
+import {
+  DatabaseSchemaManager,
+  GraphQLBackendCreator,
+  IGraphQLBackend
+} from "graphback";
 import { transpile } from "typescript";
 import { sourceModule } from "./utils";
 
@@ -18,7 +22,17 @@ export class BackendBuilder {
     const typeDefs = await this.generateTypeDefs();
     const resolvers = await this.generateResolvers();
     const dbConnection = await this.generateDatabase();
-    return { typeDefs, resolvers, dbConnection };
+    const {
+      clientQueries,
+      clientMutations
+    } = await this.generateClientQueriesAndMutations();
+    return {
+      typeDefs,
+      resolvers,
+      dbConnection,
+      clientQueries,
+      clientMutations
+    };
   }
 
   private async init() {
@@ -34,24 +48,60 @@ export class BackendBuilder {
   private async generateResolvers() {
     const modules: { [id: string]: any } = {};
 
-    for (const resolver of this.backend.resolvers.types) {
-      modules[`./generated/${resolver.name}`] = sourceModule(
-        transpile(resolver.output),
+    this.backend.resolvers.types.map(item => {
+      modules[`./generated/${item.name}`] = sourceModule(
+        transpile(item.output)
       );
-    }
+    });
 
     const { resolvers } = sourceModule(
       transpile(this.backend.resolvers.index),
-      modules,
+      modules
     );
 
     return resolvers;
   }
 
   private async generateDatabase() {
-    const manager = new DatabaseSchemaManager("sqlite3", { filename: ":memory:" });
+    const manager = new DatabaseSchemaManager("sqlite3", {
+      filename: ":memory:"
+    });
     this.backendCreator.registerDataResourcesManager(manager);
     await this.backendCreator.createDatabase();
     return manager.getConnection();
+  }
+
+  private async generateClientQueriesAndMutations() {
+    const modules: { [id: string]: any } = {};
+    
+    const {
+      fragments,
+      queries,
+      mutations
+    } = await this.backendCreator.createClient();
+
+    fragments.map(item => {
+      modules[`../fragments/${item.name}`] = sourceModule(
+        transpile(item.implementation)
+      );
+    });
+
+    let clientQueries = {};
+    queries.map(item => {
+      clientQueries[item.name] = sourceModule(
+        transpile(item.implementation),
+        modules
+      )[item.name];
+    });
+
+    let clientMutations = {};
+    mutations.map(item => {
+      clientMutations[item.name] = sourceModule(
+        transpile(item.implementation),
+        modules
+      )[item.name];
+    });
+
+    return { clientQueries, clientMutations };
   }
 }
