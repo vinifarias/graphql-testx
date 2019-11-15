@@ -14,7 +14,7 @@ const defaultConfig = {
   subCreate: false,
   subUpdate: false,
   subDelete: false,
-  disableGen: false
+  disableGen: false,
 };
 
 export class TestxServer {
@@ -47,15 +47,15 @@ export class TestxServer {
 
   private async generateServer() {
     const backendBuilder = new BackendBuilder(this.schema, defaultConfig);
-    
+
     const {
       typeDefs,
       resolvers,
       dbConnection,
       clientQueries,
-      clientMutations
+      clientMutations,
     } = await backendBuilder.generateBackend();
-    
+
     this.dbConnection = dbConnection;
     this.queries = clientQueries;
     this.mutations = clientMutations;
@@ -63,7 +63,7 @@ export class TestxServer {
     const context = async ({ req }: { req: express.Request }) => {
       return {
         req,
-        db: dbConnection
+        db: dbConnection,
       };
     };
 

@@ -1,7 +1,7 @@
 import {
   DatabaseSchemaManager,
   GraphQLBackendCreator,
-  IGraphQLBackend
+  IGraphQLBackend,
 } from "graphback";
 import { transpile } from "typescript";
 import { sourceModule } from "./utils";
@@ -24,14 +24,14 @@ export class BackendBuilder {
     const dbConnection = await this.generateDatabase();
     const {
       clientQueries,
-      clientMutations
+      clientMutations,
     } = await this.generateClientQueriesAndMutations();
     return {
       typeDefs,
       resolvers,
       dbConnection,
       clientQueries,
-      clientMutations
+      clientMutations,
     };
   }
 
@@ -48,15 +48,15 @@ export class BackendBuilder {
   private async generateResolvers() {
     const modules: { [id: string]: any } = {};
 
-    this.backend.resolvers.types.map(item => {
+    this.backend.resolvers.types.map((item) => {
       modules[`./generated/${item.name}`] = sourceModule(
-        transpile(item.output)
+        transpile(item.output),
       );
     });
 
     const { resolvers } = sourceModule(
       transpile(this.backend.resolvers.index),
-      modules
+      modules,
     );
 
     return resolvers;
@@ -64,7 +64,7 @@ export class BackendBuilder {
 
   private async generateDatabase() {
     const manager = new DatabaseSchemaManager("sqlite3", {
-      filename: ":memory:"
+      filename: ":memory:",
     });
     this.backendCreator.registerDataResourcesManager(manager);
     await this.backendCreator.createDatabase();
@@ -73,32 +73,32 @@ export class BackendBuilder {
 
   private async generateClientQueriesAndMutations() {
     const modules: { [id: string]: any } = {};
-    
+
     const {
       fragments,
       queries,
-      mutations
+      mutations,
     } = await this.backendCreator.createClient();
 
-    fragments.map(item => {
+    fragments.map((item) => {
       modules[`../fragments/${item.name}`] = sourceModule(
-        transpile(item.implementation)
+        transpile(item.implementation),
       );
     });
 
-    let clientQueries = {};
-    queries.map(item => {
+    const clientQueries = {};
+    queries.map((item) => {
       clientQueries[item.name] = sourceModule(
         transpile(item.implementation),
-        modules
+        modules,
       )[item.name];
     });
 
-    let clientMutations = {};
-    mutations.map(item => {
+    const clientMutations = {};
+    mutations.map((item) => {
       clientMutations[item.name] = sourceModule(
         transpile(item.implementation),
-        modules
+        modules,
       )[item.name];
     });
 
