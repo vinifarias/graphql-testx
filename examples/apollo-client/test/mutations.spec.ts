@@ -17,24 +17,6 @@ describe("test mutations", () => {
     }
   `;
 
-  const UPDATE_ITEM = gql`
-    mutation updateItem($id: ID!, $title: String!) {
-      updateItem(id: $id, input: { title: $title }) {
-        id
-        title
-      }
-    }
-  `;
-
-  const FIND_ALL_ITEMS = gql`
-    query findAllItems {
-      findAllItems {
-        id
-        title
-      }
-    }
-  `;
-
   before("start graphql server", async () => {
     server = new TestxServer(`
       type Item {
@@ -68,11 +50,11 @@ describe("test mutations", () => {
 
   it("should update existing item", async () => {
     const testA = (await client.query({
-      query: FIND_ALL_ITEMS,
+      query: server.queries.findAllItems,
     })).data.findAllItems.find((item) => item.title === "TestA");
 
     const testB = (await client.mutate({
-      mutation: UPDATE_ITEM,
+      mutation: server.mutations.updateItem,
       variables: { id: testA.id, title: "TestB" },
     })).data.updateItem;
 
